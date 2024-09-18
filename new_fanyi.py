@@ -62,7 +62,7 @@ def translate_text(text, service_instance, service_provider):
         return text  # 返回原始文本以防止异常导致程序中断
 
 
-def process_excel(config_name):
+def process_excel(config_name, progress_callback=None):
     global translation_result
     config = configparser.ConfigParser()
     config.read('config.ini')
@@ -127,9 +127,12 @@ def process_excel(config_name):
                 if translation_result is None:
                     translation_result = ""
                 translated_characters += len(translation_result)
-                # last_value = translation_result
                 translated_cells += 1
-                # translated_characters += len(translation_result)
+
+                if progress_callback:
+                    progress_percentage = (translated_cells / total_cells)*100
+                    progress_callback(progress_percentage)
+
                 print(
                     f"翻译进度：{translated_cells}/{total_cells}（{translated_cells / total_cells * 100:.2f}%），已翻译字符数：{translated_characters}/{total_characters}")
     print("翻译后的数据框内容：", df_translated)
@@ -143,4 +146,4 @@ def process_excel(config_name):
     writer.close()
 
 
-process_excel('hs_api')
+# process_excel('hs_api')

@@ -1,8 +1,9 @@
 import sys
-from PyQt5.QtWidgets import (QApplication, QWidget, QLabel, QComboBox, QPushButton,
-                             QLineEdit, QFileDialog, QVBoxLayout, QFormLayout, QDialog)
+from PyQt5.QtWidgets import (QApplication, QWidget, QLabel, QComboBox, QPushButton, QLineEdit, QFileDialog, QVBoxLayout,
+                             QFormLayout, QDialog, QProgressBar)
 from PyQt5.QtCore import QTimer
 import configparser
+from new_fanyi import process_excel
 
 
 class TranslationApp(QWidget):
@@ -64,6 +65,18 @@ class TranslationApp(QWidget):
         self.layout.addWidget(self.submit_button)
 
         self.setLayout(self.layout)
+
+        # 添加进度条
+        self.progress_bar = QProgressBar(self)
+        self.progress_bar.setGeometry(30, 300, 400, 25)
+        self.progress_bar.setMinimum(0)
+        self.progress_bar.setMaximum(100)  # 进度条范围0到100
+        self.progress_bar.setValue(0)   # 初始值为0
+        self.progress_bar.setVisible(False)
+        self.progress_bar.setFormat('%p%')
+
+        # 布局中加入进度条
+        self.layout.addWidget(self.progress_bar)
 
     # 更新翻译服务选项时显示或隐藏 key 和 value 的输入框
     def update_key_value_input(self):
@@ -132,8 +145,10 @@ class TranslationApp(QWidget):
                                                                                                                  'output_file'):
             self.show_error_message("请完整填写所有信息")  # 弹出错误提示窗
         else:
-
             self.update_config_file(service, key, value)
+
+            self.progress_bar.setValue(0)
+            self.progress_bar.setVisible(True)
 
             print(f"选择的翻译服务: {service}")
             print(f"Key: {key}")
@@ -141,8 +156,18 @@ class TranslationApp(QWidget):
             print(f"需要翻译的文件: {self.input_file}")
             print(f"保存的文件路径: {self.output_file}")
 
-            # 在这里调用你实际的翻译逻辑
-            # 调用你的翻译函数，传递相应的参数
+            # 调用翻译函数，传递相应的参数
+            try:
+                if service == "腾讯翻译":
+                    process_excel('tx_api', self.update_progress_bar)
+                elif service == "火山翻译":
+                    process_excel('hs_api', self.update_progress_bar)
+                else:
+                    raise ValueError("未知的翻译服务")
+                self.progress_bar.setValue(100)  # 强制设置进度条到100%
+                self.show_info_message("翻译已完成")
+            except Exception as e:
+                print(f"翻译过程中出现错误: {e}")
 
     def update_config_file(self, service, key, value):
         config = configparser.ConfigParser()
@@ -163,6 +188,29 @@ class TranslationApp(QWidget):
             config.write(configfile)
 
         print("配置文件已更新")
+
+    # 更新进度条的方法
+    def update_progress_bar(self, value):
+        self.progress_bar.setValue(value)
+        self.progress_bar.setFormat(f"{value}%")
+        QApplication.processEvents()
+
+
+    def show_info_message(self, message):
+        info_dialog = QDialog(self)
+        info_dialog.setWindowTitle("提示")
+
+        # 设置提示的 QLabel
+        info_label = QLabel(message, info_dialog)
+        info_label.setStyleSheet("color: green")
+
+        # 设置布局
+        layout = QVBoxLayout()
+        layout.addWidget(info_label)
+        info_dialog.setLayout(layout)
+
+        # 显示弹窗
+        info_dialog.exec_()  # 使用 exec_() 确保弹窗在完成后关闭
 
 
 if __name__ == '__main__':
