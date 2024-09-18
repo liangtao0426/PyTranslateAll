@@ -2,6 +2,7 @@ import sys
 from PyQt5.QtWidgets import (QApplication, QWidget, QLabel, QComboBox, QPushButton,
                              QLineEdit, QFileDialog, QVBoxLayout, QFormLayout, QDialog)
 from PyQt5.QtCore import QTimer
+import configparser
 
 
 class TranslationApp(QWidget):
@@ -131,6 +132,9 @@ class TranslationApp(QWidget):
                                                                                                                  'output_file'):
             self.show_error_message("请完整填写所有信息")  # 弹出错误提示窗
         else:
+
+            self.update_config_file(service, key, value)
+
             print(f"选择的翻译服务: {service}")
             print(f"Key: {key}")
             print(f"Value: {value}")
@@ -139,6 +143,26 @@ class TranslationApp(QWidget):
 
             # 在这里调用你实际的翻译逻辑
             # 调用你的翻译函数，传递相应的参数
+
+    def update_config_file(self, service, key, value):
+        config = configparser.ConfigParser()
+        config.read('config.ini')
+
+        if service == "腾讯翻译":
+            config['tx_api']['secret_id'] = key
+            config['tx_api']['secret_key'] = value
+            config['tx_api']['input_file_path'] = self.input_file
+            config['tx_api']['output_file_path'] = self.output_file
+        elif service == "火山翻译":
+            config['hs_api']['access_key'] = key
+            config['hs_api']['secret_key'] = value
+            config['hs_api']['input_file_path'] = self.input_file
+            config['hs_api']['output_file_path'] = self.output_file
+
+        with open('config.ini', 'w') as configfile:
+            config.write(configfile)
+
+        print("配置文件已更新")
 
 
 if __name__ == '__main__':
